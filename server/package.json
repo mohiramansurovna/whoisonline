@@ -1,0 +1,31 @@
+{
+  "name": "whoisonline",
+  "version": "1.0.0",
+  "description": "a project to learn how network works with app",
+  "license": "ISC",
+  "author": "mohiramansurovna",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "node src/main.ts",
+    "dev": "nodemon --exec ts-node src/main.ts",
+    "lint": "eslint .",
+    "migrate:up": "node ./migrations/migration.js up",
+    "migrate:down": "node ./migrations/migration.js down",
+    "migrate:create": "node ./migrations/migration.js create"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "@types/ws": "^8.18.1",
+    "globals": "^16.5.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.10.1",
+    "pg": "^8.20.0",
+    "ws": "^8.20.0"
+  }
+}

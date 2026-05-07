@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login</title>
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .card {
+            width: 320px;
+            padding: 24px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>Login</h2>
+
+        <input id="email" placeholder="email" />
+        <input id="password" type="password" placeholder="password" />
+
+        <button onclick="login()">Login</button>
+
+        <p style="margin-top:10px;">
+            No account? <a href="./register.html">Register</a>
+        </p>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            const res = await fetch("http://localhost:3000/auth/login", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                window.location.href = "./main.html";
+            } else {
+                alert("Login failed");
+            }
+        }
+    </script>
+</body>
+
+</html>
