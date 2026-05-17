@@ -1,24 +1,26 @@
-import {scrypt, randomBytes} from 'crypto'
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto'
 import { promisify } from 'util'
 
-const scryptAsync=promisify(scrypt);
+const scryptAsync = promisify(scrypt);
 
-export const Hasher={
-    hashPassword:async (value:string):Promise<string>=>{
-        const salt=randomBytes(16).toString('hex');
-        const hash=await scryptAsync(value, salt, 64) as Buffer;
+export const Hasher = {
+    hashPassword: async (value: string): Promise<string> => {
+        const salt = randomBytes(16).toString('hex');
+        const hash = await scryptAsync(value, salt, 64) as Buffer;
 
         return `${salt}:${hash.toString('hex')}`
     },
-    verifyPassword:async (value:string, hash:string):Promise<boolean>=>{
-        const parts=hash.split(':');
+    verifyPassword: async (value: string, storedHash: string): Promise<boolean> => {
+        const [salt, expectedHashHex] = storedHash.split(':');
 
-        if(parts.length!==2){
-            return false;
+        if (!salt || !expectedHashHex) return false;
+             
+        const generatedHashBuffer = await scryptAsync(value, salt, 64) as Buffer;
+        const expectedHashBuffer=Buffer.from(expectedHashHex,'hex');
+
+        if(expectedHashBuffer.length!==generatedHashBuffer.length){
+            return false
         }
-        const salt=parts[0] as string;
-        const hashed_value=(await scryptAsync(value,salt,64) as Buffer).toString('hex');
-
-        return hashed_value===parts[1];
+        return timingSafeEqual(expectedHashBuffer,generatedHashBuffer)
     }
 }
