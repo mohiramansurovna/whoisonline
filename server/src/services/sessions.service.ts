@@ -1,42 +1,42 @@
 import { randomUUID } from 'crypto';
-import {Redis} from 'ioredis';
+import { RedisClient, RedisKeys } from '../shared/config/redis.config.ts';
+
 export type SessionId = string;
 type UserId = number;
 
 // const sessions = new Map<SessionId, UserId>();
 // const userSessions = new Map<UserId, Set<SessionId>>();
 
-const redis = new Redis({
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: parseInt(process.env.REDIS_PORT ?? '6379')
-});
-
-
 const SESSION_TTL = 60 * 60 * 24 * 7; // 7 days in seconds
 
 export const sessionsService = {
-    createSession: async (userId: UserId): Promise<SessionId> => {
+    async createSession(userId: UserId): Promise<SessionId> {
+        const redis = RedisClient.get()
+
         const sessionId: SessionId = randomUUID();
 
-        await redis.set(`session:${sessionId}`, userId, 'EX', SESSION_TTL);
-        await redis.sadd(`usersessions:${userId}`, sessionId);
-        await redis.expire(`usersessions:${userId}`, SESSION_TTL);
+        await redis.pipeline()
+            .set(RedisKeys.session(sessionId), String(userId), 'EX', SESSION_TTL)
+            .sadd(RedisKeys.userSessions(userId), sessionId)
+            .expire(RedisKeys.userSessions(userId), SESSION_TTL)
+            .exec()
 
         return sessionId;
     },
 
-    getUserIdBySessionId: async (sessionId: SessionId): Promise<UserId | null> => {
-        const userId = await redis.get(`session:${sessionId}`);
-        return userId ?Number(userId): null;
+    async getUserIdBySessionId(sessionId: SessionId): Promise<UserId | null> {
+        const redis = RedisClient.get()
+
+        const userId = await redis.get(RedisKeys.session(sessionId));
+        return userId ? Number(userId) : null;
     },
 
-    deleteSession:async (sessionId: SessionId, userId: UserId): Promise<void> => {
-        await redis.del(`session:${sessionId}`);
-        await redis.srem(`usersessions:${userId}`, sessionId);
+    async deleteSession(sessionId: SessionId, userId: UserId): Promise<void> {
+        const redis = RedisClient.get()
 
-        const remaining = await redis.scard(`usersessions:${userId}`);
-        if (remaining === 0) {
-            await redis.del(`usersessions:${userId}`);
-        }
+        await redis.pipeline()
+            .del(RedisKeys.session(sessionId))
+            .srem(RedisKeys.userSessions(userId), sessionId)
+            .exec()
     },
 };

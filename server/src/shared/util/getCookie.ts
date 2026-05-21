@@ -1,8 +1,8 @@
 import type { IncomingMessage } from "http";
 
-export function getCookie(req: IncomingMessage, name: string): string | undefined {
+export function getCookie(req: IncomingMessage, name: string): string | null {
     const header = req.headers.cookie;
-    if (!header) return undefined;
+    if (!header) return null;
 
     const cookies = Object.fromEntries(
         header.split(";").map(c => {

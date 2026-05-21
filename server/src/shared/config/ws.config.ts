@@ -1,10 +1,8 @@
-// src/ws/ws.ts
 import { WebSocketServer, WebSocket } from 'ws';
-import type { Server } from 'http';
-import type { IncomingMessage } from 'http';
-import { getCookie } from './shared/util/getCookie.ts';
-import { sessionsService } from './services/sessions.service.ts';
-import { socketsService } from './services/sockets.service.ts';
+import type { Server, IncomingMessage } from 'http';
+import { getCookie } from '../util/getCookie.ts';
+import { sessionsService } from '../../services/sessions.service.ts';
+import { socketsService } from '../../services/sockets.service.ts';
 
 const HEARTBEAT_INTERVAL = 30_000;
 
@@ -64,13 +62,13 @@ export function initWebSocketServer(server: Server): void {
     });
 
     const heartbeat = setInterval(() => {
-        wss.clients.forEach((ws) => {
+        for (const ws of wss.clients) {
             const socket = ws as AuthenticatedWebSocket;
             if (!socket.isAlive) { socket.terminate(); return; }
             socket.isAlive = false;
             socket.ping();
-        });
+        }
     }, HEARTBEAT_INTERVAL);
 
-    server.on("close", () => clearInterval(heartbeat));
+    wss.on("close", () => clearInterval(heartbeat));
 }

@@ -8,30 +8,29 @@ import { sessionsService, type SessionId } from "./sessions.service.ts";
  * update user
  * delete user
  */
-export const usersService={
-    getUser:async(sessionId:SessionId):Promise<User>=>{
-        const userId=await sessionsService.getUserIdBySessionId(sessionId);
-        if(!userId) throw new HttpError('Invalid userId',400);
-        const user= await usersRepository.getById(userId);
-        if(!user) throw new HttpError('User not found',404);
+export const usersService = {
+    async getUser(sessionId: SessionId): Promise<User> {
+        const userId = await sessionsService.getUserIdBySessionId(sessionId);
+        if (!userId) throw new HttpError('Invalid userId', 400);
+        const user = await usersRepository.getById(userId);
+        if (!user) throw new HttpError('User not found', 404);
         return user
     },
-    getAllUsers:async():Promise<User[]>=>{
+    async getAllUsers(): Promise<User[]> {
         const users = await usersRepository.getAll();
         return users;
     },
-    
-    updateLastSeen:async(sessionId:SessionId):Promise<void>=>{
-        const userId=await sessionsService.getUserIdBySessionId(sessionId);
-        if(!userId){
-            throw new HttpError('User not found',404)
+    async updateLastSeen(sessionId: SessionId): Promise<void> {
+        const userId = await sessionsService.getUserIdBySessionId(sessionId);
+        if (!userId) {
+            throw new HttpError('User not found', 404)
         }
         await usersRepository.updateLastSeen(userId);
     },
-    deleteUser:async(sessionId:SessionId):Promise<void>=>{
-        const userId=await sessionsService.getUserIdBySessionId(sessionId);
-        if(!userId){
-            throw new HttpError('User not found',404)
+    async deleteUser(sessionId: SessionId): Promise<void> {
+        const userId = await sessionsService.getUserIdBySessionId(sessionId);
+        if (!userId) {
+            throw new HttpError('User not found', 404)
         }
         await usersRepository.delete(userId);
     }

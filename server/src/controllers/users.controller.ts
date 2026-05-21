@@ -5,30 +5,33 @@ import { usersService } from "../services/users.service.ts";
 import { getCookie } from "../shared/util/getCookie.ts";
 import { usersPresenter } from "../presenters/users.presenter.ts";
 import { sendResponse } from "../shared/util/sendResponse.ts";
+import { HttpError } from "../shared/lib/httpError.ts";
 
 export async function usersController(req: IncomingMessage, res: ServerResponse, parts: string[]): Promise<void> {
     const part = parts[0];
     const method = req.method;
     try {
         switch (method) {
-            case 'GET':
-                if (part == 'me') {
+            case 'GET': {
+                if (part === 'me') {
                     await getUser(req, res)
-                    break
                 } else {
                     await getAllUsers(req, res)
-                    break
                 }
-            case 'PUT':
+                break;
+            }
+            case 'PUT': {
                 await updateUser(req, res)
                 break
+            }
 
-            case 'DELETE':
+            case 'DELETE': {
                 await deleteUser(req, res)
                 break
-            default:
+            }
+            default: {
                 notFoundController(req, res)
-                break
+            }
         }
 
     } catch (err: unknown) {
@@ -37,12 +40,7 @@ export async function usersController(req: IncomingMessage, res: ServerResponse,
 }
 
 async function getUser(req: IncomingMessage, res: ServerResponse): Promise<void> {
-
-    const sessionId = getCookie(req, 'sessionId');
-    if (!sessionId) {
-        sendResponse(res, 400, 'No session');
-        return;
-    }
+    const sessionId = getSession(req)
 
     const user = await usersService.getUser(sessionId);
     if (!user) {
@@ -51,38 +49,31 @@ async function getUser(req: IncomingMessage, res: ServerResponse): Promise<void>
     }
 
     sendResponse(res, 200, usersPresenter.one(user), true)
-    return;
 }
 
 async function getAllUsers(req: IncomingMessage, res: ServerResponse): Promise<void> {
 
     const users = await usersService.getAllUsers();
     sendResponse(res, 200, usersPresenter.many(users), true);
-    return;
 }
 
 async function updateUser(req: IncomingMessage, res: ServerResponse): Promise<void> {
-
-    const sessionId = getCookie(req, 'sessionId');
-    if (!sessionId) {
-        sendResponse(res, 400, 'No session');
-        return;
-    }
-
+    const sessionId = getSession(req)
     await usersService.updateLastSeen(sessionId);
     sendResponse(res, 200, 'User updated');
-    return;
 }
 
 async function deleteUser(req: IncomingMessage, res: ServerResponse): Promise<void> {
-
-    const sessionId = getCookie(req, 'sessionId');
-    if (!sessionId) {
-        sendResponse(res, 400, 'No session');
-        return
-    }
+    const sessionId = getSession(req)
 
     await usersService.deleteUser(sessionId);
     sendResponse(res, 200, 'User deleted');
-    return;
+}
+
+function getSession(req: IncomingMessage): string {
+    const sessionId = getCookie(req, 'sessionId');
+
+    if (!sessionId) throw new HttpError('No session', 401)
+
+    return sessionId
 }

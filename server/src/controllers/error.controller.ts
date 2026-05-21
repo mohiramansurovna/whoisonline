@@ -7,7 +7,7 @@ export function errorController(req: IncomingMessage, res: ServerResponse, err: 
         sendResponse(res, err.status, err.message)
     } else {
 
-        console.log(err)
+        console.error(err)
         sendResponse(res, 500, 'Internal server error')
     }
 }
