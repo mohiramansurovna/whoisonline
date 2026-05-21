@@ -1,98 +1,97 @@
-
 type ValidatorType = 'number' | 'string' | 'boolean'
-type InferType<T extends ValidatorType | undefined> =
-    T extends 'number' ? number :
-    T extends 'string' ? string :
-    T extends 'boolean' ? boolean :
-    never
-type ValidatorProps = Record<any, unknown>
-export class Validator<T extends ValidatorType | undefined = undefined> {
-    private type?: T;
-    private isOptional = false;
-    private minValue?: number;
-    private maxValue?: number;
+type InferValidatorType<V> =
+    V extends Validator<'number', false> ? number :
+    V extends Validator<'string', false> ? string :
+    V extends Validator<'boolean', false> ? boolean :
+    V extends Validator<'number', true> ? number | undefined :
+    V extends Validator<'string', true> ? string | undefined :
+    V extends Validator<'boolean', true> ? boolean | undefined :
+    never;
 
-    number() {
-        this.type = 'number' as T
-        return this
+export type InferSchema<S> =
+    S extends Schema<infer T>
+    ? { [K in keyof T]: InferValidatorType<T[K]> }
+    : never;
+
+export class Validator<
+    T extends ValidatorType,
+    O extends boolean = false
+> {
+    private constructor(
+        private readonly type: T,
+        private readonly isOptional: O = false as O
+    ) { }
+
+
+    static number(): Validator<'number'> {
+        return new Validator('number')
     }
-    string() {
-        this.type = 'string' as T
-        return this
+    static string(): Validator<'string'> {
+        return new Validator('string')
     }
-    boolean() {
-        this.type = 'boolean' as T
-        return this
+    static boolean(): Validator<'boolean'> {
+        return new Validator('boolean')
     }
-    optional() {
-        this.isOptional = true;
-        return this
-    }
-    min(value: number) {
-        this.minValue = value
-        return this
-    }
-    max(value: number) {
-        this.maxValue = value
-        return this
+    optional(): Validator<T, true> {
+        return new Validator<T, true>(this.type, true)
     }
 
-    validate(key: string, value: unknown){
-        try {
 
-            if (!this.isOptional && !value) {
-                throw new Error(`Value ${key} is not given`)
+    parse(key: string, value: unknown){
+        const missing = value == null || value == '';
+        if (missing) {
+            if (this.isOptional === false) {
+                throw new Error(`${key}: required but missing`)
             }
+            return undefined
+        }
 
-            switch (this.type) {
-                case 'number': {
-                    const numValue = Number(value)
-
-                    if (isNaN(numValue)) throw new Error(`Value ${key} is not number`);
-                    if (this.minValue !== undefined && numValue < this.minValue) {
-                        throw new Error(`Value ${key} is smaller than minimum value`);
-                    }
-
-                    if (this.maxValue !== undefined && numValue > this.maxValue) {
-                        throw new Error(`Value ${key} is more than maximum value`);
-                    }
+        switch (this.type) {
+            case 'number': {
+                const parsedValue = Number(value);
+                if (isNaN(parsedValue)) {
+                    throw new Error(`${key}: expected number, got "${value}"`)
+                }
+                return parsedValue
+            }
+            case 'string': {
+                if (typeof value !== 'string') {
+                    throw new Error(`${key}: expected string, got "${value}"`)
+                }
+                return value
+            }
+            case 'boolean': {
+                if (value === true || value === 'true') {
                     return true
                 }
-                case 'string':
-                    if (typeof value !== 'string') {
-                        throw new Error(`Value ${key} is not string`);
-                    } else return true
-                case 'boolean':
-                    if (value === 'true' || value === 'false') {
-                        throw new Error(`Value ${key} is not boolean`);
-                    } else return true
-                default:
-                    return true
+                if (value === false || value === 'false') {
+                    return false
+                }
+                throw new Error(`${key}: expected boolean, got "${value}"`)
             }
-        } catch (err) {
-            console.log(err)
         }
-    }
 
-}
-type SchemaShape = Record<string, Validator<any>>
 
-type InferSchema<T extends SchemaShape> = {
-    [K in keyof T]:
-    T[K] extends Validator<infer U>
-    ? InferType<U>
-    : never
-}
-export class Schema<T extends SchemaShape> {
-
-    constructor(private props: T) { }
-    validateSchema(values: ValidatorProps) {
-
-        Object.entries(this.props).every(([key, validator]) => {
-            validator.validate(key, values[key])
-        })
-        return {} as InferSchema<T>
     }
 }
 
+export class Schema<T extends Record<string, Validator<any, any>>> {
+    constructor(private readonly shape: T) { }
 
+    parse(values: Record<string, unknown>) {
+        const errors: string[] = [];
+        const result: Record<string, unknown> = {};
+
+        for (const [key, validator] of Object.entries(this.shape)) {
+            try {
+                result[key] = validator.parse(key, values[key])
+            } catch (err) {
+                errors.push(err instanceof Error ? err.message : String(err))
+            }
+        }
+
+        if (errors.length) throw new Error(`Validation failed: \n${errors.join('\n')}`)
+
+        return result as { [K in keyof T]: InferValidatorType<T[K]> }
+    }
+}

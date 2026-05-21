@@ -2,11 +2,11 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { authService } from "../services/auth.service.ts";
 import { notFoundController } from "./notFound.controller.ts";
 import { errorController } from "./error.controller.ts";
-import type { SessionId } from "../services/sessions.service.ts";
 import { getCookie } from "../shared/util/getCookie.ts";
 import { sendResponse } from "../shared/util/sendResponse.ts";
 import { HttpError } from "../shared/lib/httpError.ts";
 import { readBody } from "../shared/util/readBody.ts";
+import { getJson } from "../shared/util/getJson.ts";
 
 
 
@@ -35,8 +35,7 @@ export async function authController(req: IncomingMessage, res: ServerResponse, 
 async function register(req: IncomingMessage, res: ServerResponse): Promise<void> {
 
     const body = await readBody(req);
-    const { email, password } = JSON.parse(body)
-    if (!email || !password) throw new HttpError('No email or password', 400);
+    const { email, password } = getJson(['email', 'password'], body)
 
     //email is not validated for simplicity, but should be in real app
 
@@ -46,8 +45,7 @@ async function register(req: IncomingMessage, res: ServerResponse): Promise<void
 }
 async function login(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const body = await readBody(req)
-    const { email, password } = JSON.parse(body);
-    if (!email || !password) throw new HttpError('No email or password', 400);
+    const { email, password } = getJson(['email', 'password'], body)
 
     const sessionId = await authService.login(email, password);
     res.setHeader('Set-Cookie', `sessionId=${sessionId}; HttpOnly; Path=/`);
@@ -58,7 +56,9 @@ async function login(req: IncomingMessage, res: ServerResponse): Promise<void> {
 
 async function logout(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const sessionId = getCookie(req, 'sessionId');
-    await authService.logout(sessionId as SessionId);
+    if (!sessionId) throw new HttpError('Invalid session', 401);
+
+    await authService.logout(sessionId);
     res.setHeader('Set-Cookie', 'sessionId=; HttpOnly; Path=/');
     sendResponse(res, 200)
 }
