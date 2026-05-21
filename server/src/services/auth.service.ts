@@ -6,7 +6,9 @@ import { socketsService } from "./sockets.service.ts";
 
 export const authService = {
     async register(email: string, password: string): Promise<void> {
-        
+        const existingUser = await usersRepository.getByEmail(email);
+        if (existingUser) throw new HttpError('User already exists', 409)
+
         const password_hash = await Hasher.hashPassword(password)
         await usersRepository.create(email, password_hash);
     },

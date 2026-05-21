@@ -38,7 +38,7 @@ export class Validator<
 
 
     parse(key: string, value: unknown){
-        const missing = value == null || value == '';
+        const missing = value == null || value === '';
         if (missing) {
             if (this.isOptional === false) {
                 throw new Error(`${key}: required but missing`)
