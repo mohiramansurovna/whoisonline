@@ -7,7 +7,7 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "start": "node src/main.ts",
+    "start": "tsx src/main.ts",
     "dev": "nodemon --exec tsx src/main.ts",
     "lint": "eslint .",
     "migrate:up": "node ./migrations/migration.js up",
