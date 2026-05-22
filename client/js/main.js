@@ -1,4 +1,4 @@
-let ws;
+let eventSource;
 let currentUserId = null;
 
 let users = [];
@@ -63,13 +63,15 @@ function applyUserUI(li, user) {
     }
 }
 
-// ---------- WS ----------
-function openWS() {
-    ws = new WebSocket("ws://localhost:3000");
+// ---------- SSE ----------
+function openSSE() {
+    eventSource = new EventSource("http://localhost:3000/events", {
+        withCredentials: true
+    });
 
-    ws.onmessage = (event) => {
+    eventSource.addEventListener('message', (event) => {
         const msg = JSON.parse(event.data);
-        console.log(msg)
+        console.log(msg);
 
         if (msg.type === "USER_ONLINE") {
             onlineUsers.add(msg.userId);
@@ -81,19 +83,18 @@ function openWS() {
             updateUserUI(msg.userId);
         }
 
-        if(msg.type==="INIT"){
+        if (msg.type === "INIT") {
             onlineUsers.clear();
             onlineUsers = new Set(msg.onlineUsers);
-            renderUsers()
+            renderUsers();
         }
-    };
-    ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-    }
+    });
 
-
-    ws.onclose = () => {
-        console.log("WebSocket connection closed");
+    eventSource.onerror = (err) => {
+        console.error("SSE connection error:", err);
+        if (eventSource.readyState === EventSource.CLOSED) {
+            console.log("SSE connection closed");
+        }
     };
 }
 
@@ -114,7 +115,7 @@ async function start() {
 
     await getUsers();
     renderUsers();
-    openWS();
+    openSSE();
 }
 
 start();

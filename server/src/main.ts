@@ -1,7 +1,6 @@
 import { createHttpServer } from "./shared/config/server.config.ts";
 import { loadEnvConfig } from "./shared/config/env.config.ts";
 import { handleRootError } from "./shared/util/handleRootError.ts";
-import { initWebSocketServer } from "./shared/config/ws.config.ts";
 import { PgClient } from "./shared/config/pg.config.ts";
 import { RedisClient } from "./shared/config/redis.config.ts";
 
@@ -19,9 +18,6 @@ async function bootstrap() {
     server.listen(envConfig.APP_PORT, () => {
         console.log(`Server is listening on http://localhost:${envConfig.APP_PORT}`)
     })
-
-    initWebSocketServer(server);
-
 }
 
 process.on('uncaughtException', (err) => handleRootError(err))

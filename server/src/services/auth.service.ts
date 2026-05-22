@@ -2,7 +2,7 @@ import { usersRepository } from "../repositories/users.repository.ts";
 import { Hasher } from "../shared/lib/hasher.ts";
 import { HttpError } from "../shared/lib/httpError.ts";
 import { sessionsService, type SessionId } from "./sessions.service.ts";
-import { socketsService } from "./sockets.service.ts";
+import { sseService } from "./sse.service.ts";
 
 export const authService = {
     async register(email: string, password: string): Promise<void> {
@@ -29,6 +29,6 @@ export const authService = {
         if (!userId) throw new HttpError('Invalid session', 401);
 
         await sessionsService.deleteSession(sessionId, userId);
-        socketsService.removeAllUserSockets(userId);
+        sseService.removeAllUserClients(userId);
     }
 }
